@@ -17,6 +17,15 @@
  */
 package de.ubergeek.amigaguideviewer;
 
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
+import java.awt.datatransfer.UnsupportedFlavorException;
+import java.awt.dnd.DnDConstants;
+import java.awt.dnd.DropTarget;
+import java.awt.dnd.DropTargetDragEvent;
+import java.awt.dnd.DropTargetDropEvent;
+import java.awt.dnd.DropTargetEvent;
+import java.awt.dnd.DropTargetListener;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -36,13 +45,16 @@ import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 
 /**
- *
- * @author agewert
+ * Simple AmigaGuide viewer - main window
+ * @author André Gewert <agewert@ubergeek.de>
  */
 public class MainWindow extends javax.swing.JFrame {
 
     // <editor-fold desc="Properties">
     
+    /**
+     * Prefix for window title
+     */
     private final static String TITLE_PREFIX = "AmigaGuideViewer";
     
     /**
@@ -59,7 +71,10 @@ public class MainWindow extends javax.swing.JFrame {
      * View stack for navigation back
      */
     private final Stack<Node> viewStack = new Stack<>();
-    
+
+    /**
+     * Instance of JFileChooser for "Open file" command
+     */
     private final JFileChooser fileChooser = new JFileChooser();
             
     // </editor-fold>
@@ -67,11 +82,16 @@ public class MainWindow extends javax.swing.JFrame {
     
     // <editor-fold desc="Public methods">
     
+    /**
+     * Sets an already parsed document that should be displayed
+     * @param document The document to be shown
+     */
     public void setDocument(Document document) {
         currentDocument = document;
-        if (currentDocument != null && currentDocument.getFirstNode() != null) {
-            viewStack.clear();
-            documentNodesTree.setModel(createNodesList(currentDocument));
+        documentNodesTree.setModel(createNodesList(currentDocument));
+        viewStack.clear();
+        
+        if (currentDocument != null && currentDocument.getTitleNode() != null) {
             cmdNavigateToToc();
         }
     }
@@ -126,11 +146,12 @@ public class MainWindow extends javax.swing.JFrame {
     private TreeModel createNodesList(Document document) {
         var treeTopNode = new DefaultMutableTreeNode("Contents");
         
-        for (var node : document.getNodesList()) {
-            var treeNode = new DefaultMutableTreeNode(node, false);
-            treeTopNode.add(treeNode);
+        if (document != null) {
+            for (var node : document.getNodesList()) {
+                var treeNode = new DefaultMutableTreeNode(node, false);
+                treeTopNode.add(treeNode);
+            }
         }
-        
         return new DefaultTreeModel(treeTopNode);
     }
     
@@ -160,7 +181,7 @@ public class MainWindow extends javax.swing.JFrame {
     }
     
     private void showDefaultDocument() {
-        mainContentPane.setText("<html><body>No document loaded or no content selected</body></html>");
+        mainContentPane.setText("<html><body></body></html>");
     }
     
     private TreeNode[] findTreeNodeByDocumentNode(Node node) {
@@ -215,7 +236,7 @@ public class MainWindow extends javax.swing.JFrame {
         if (currentDocument == null) return null;
         String nodeIdentifier = (selectedDocumentNode == null)? currentDocument.getTocNodeIdentifier() : selectedDocumentNode.getTocNodeIdentifier();        
         if (nodeIdentifier == null) {
-            var node = currentDocument.getFirstNode();
+            var node = currentDocument.getTitleNode();
             if (node != null) nodeIdentifier = node.getIdentifier();
         }
         return nodeIdentifier;
@@ -262,6 +283,11 @@ public class MainWindow extends javax.swing.JFrame {
         }
     }
     
+    private void cmdOpenAboutDialog() {
+        var dialog = new AboutDialog(this, true);
+        dialog.setVisible(true);
+    }
+    
     // </editor-fold>
 
     /**
@@ -277,6 +303,7 @@ public class MainWindow extends javax.swing.JFrame {
         statusBarProgressBar.setVisible(false);
         
         // Event handler for clicked links
+        mainContentPane.setDropTarget(null);
         mainContentPane.addHyperlinkListener((HyperlinkEvent he) -> {
             if (he.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
 
@@ -289,10 +316,18 @@ public class MainWindow extends javax.swing.JFrame {
                 if (parts.length == 2) {
                     if (parts[0].equals("link")) {
                         selectDocumentNodeByIdentifier(parts[1]);
+                        
+                        // TODO It could be possible to link to external files
+                        // If another amiga guide file is linked it should be opened
+                        // within this application; otherwise it should be opened
+                        // within the system's default application
+                        
+                        // Desktop.getDesktop().open(...);
                     }
                 }                
             }
         });
+        showDefaultDocument();
         
         // Event handler for selection changes in the content tree
         documentNodesTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
@@ -313,6 +348,51 @@ public class MainWindow extends javax.swing.JFrame {
                 } else {
                     cmdNavigateToToc();
                 }
+            }
+        });
+        
+        // Support for dragging files onto application window
+        new DropTarget(this, DnDConstants.ACTION_COPY_OR_MOVE, new DropTargetListener() {
+            @Override
+            public void dragEnter(DropTargetDragEvent dtde) {
+            }
+
+            @Override
+            public void dragOver(DropTargetDragEvent dtde) {
+            }
+
+            @Override
+            public void dropActionChanged(DropTargetDragEvent dtde) {
+            }
+
+            @Override
+            public void dragExit(DropTargetEvent dte) {
+            }
+
+            @Override
+            public void drop(DropTargetDropEvent dtde) {
+                try {
+		    Transferable tr = dtde.getTransferable();
+		    DataFlavor[] flavors = tr.getTransferDataFlavors();
+
+                    for (DataFlavor flavor : flavors) {
+                        if (flavor.isFlavorJavaFileListType()) {
+                            dtde.acceptDrop(dtde.getDropAction());
+                            
+                            @SuppressWarnings(value = "unchecked")
+                            java.util.List<File> files = (java.util.List<File>)tr.getTransferData(flavor);
+                            if (files.size() == 1) {
+                                openDocumentFile(files.get(0).toPath());
+                            }
+
+                            dtde.dropComplete(true);
+                        }
+                    }
+		    return;
+		} catch (UnsupportedFlavorException | IOException t) {
+                    // Ignore errors
+		}
+		dtde.rejectDrop();
             }
         });
         
@@ -432,6 +512,11 @@ public class MainWindow extends javax.swing.JFrame {
         navAboutButton.setFocusable(false);
         navAboutButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         navAboutButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        navAboutButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                navAboutButtonActionPerformed(evt);
+            }
+        });
         mainToolBar.add(navAboutButton);
 
         jSplitPane1.setDividerLocation(200);
@@ -525,6 +610,10 @@ public class MainWindow extends javax.swing.JFrame {
     private void navOpenButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_navOpenButtonActionPerformed
         cmdOpenFileDialog();
     }//GEN-LAST:event_navOpenButtonActionPerformed
+
+    private void navAboutButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_navAboutButtonActionPerformed
+        cmdOpenAboutDialog();
+    }//GEN-LAST:event_navAboutButtonActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTree documentNodesTree;

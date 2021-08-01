@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- *
+ * Represents a line command
  * @author André Gewert <agewert@ubergeek.de>
  */
 public final class Command {

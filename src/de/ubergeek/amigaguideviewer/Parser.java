@@ -26,18 +26,33 @@ import java.util.Arrays;
 import java.util.regex.Pattern;
 
 /**
- *
+ * Simple AmigaGuide viewer - parser component
  * @author André Gewert <agewert@ubergeek.de>
+ * @todo Parse should check if file starts with @database command
  */
 public class Parser {
 
     // <editor-fold desc="Public methods">
     
+    /**
+     * Parses an AmigaGuide file.
+     * If the file could not be read an exception will be thrown.
+     * If the file could not be parsed an empty document (empty node list) will
+     * be created.
+     * @param file Path to the file
+     * @return Parsed document
+     * @throws IOException If the file could not be read
+     */
     public Document parseAmigaGuideFromFile(Path file) throws IOException {
         String contents = Files.readString(file, StandardCharsets.ISO_8859_1);
         return parseAmigaGuide(contents);
     }
 
+    /**
+     * Parses an AmigaGuide file.
+     * @param content The file content as a string
+     * @return Parsed document
+     */
     public Document parseAmigaGuide(String content) {
         var lines = new ArrayList<String>(Arrays.asList(content.split("\\n")));
         var document = new Document();
@@ -54,7 +69,7 @@ public class Parser {
                     
                     // Start new node
                     case "node" -> {
-                        currentNode = document.createAddNode(
+                        currentNode = document.createAndAddNode(
                             command.getArgument(0), command.getArgument(1)
                         );
                     }

@@ -25,12 +25,17 @@ import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
 /**
- *
- * @author agewert
+ * Simple AmigaGuide viewer - command line wrapper.
+ * First argument is interpreted as the name of a file to be opened at startup.
+ * If no file name is given, the user interface will be opened withour a file;
+ * files can be opened via drag and drop or with a file chooser.
+ * @author André Gewert <agewert@ubergeek.de>
  */
 public class AmigaGuideViewer {
 
     /**
+     * AmigaGuideViewer - command line wrapper
+     * 
      * @param args the command line arguments
      * @throws java.io.IOException
      * @throws java.net.URISyntaxException
@@ -41,7 +46,7 @@ public class AmigaGuideViewer {
         try {
             UIManager.setLookAndFeel(new FlatLightLaf());
         } catch (UnsupportedLookAndFeelException ex) {
-            // Ignore error
+            // We can safely ignore errors while setting the look and feel
         }
 
         var window = new MainWindow();

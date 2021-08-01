@@ -22,11 +22,13 @@ import java.nio.charset.Charset;
 import java.util.regex.Pattern;
 
 /**
- *
+ * Generates html code from document nodes
  * @author André Gewert <agewert@ubergeek.de>
  */
 public class NodeHtmlConverter {
 
+    // <editor-fold desc="Properties">
+    
     private Node node;
     
     private boolean isIOpen = false;
@@ -39,14 +41,43 @@ public class NodeHtmlConverter {
     
     private int openFontTags = 0;
     
+    // </editor-fold>
+    
+    
+    // <editor-fold desc="Constructors">
+    
+    /**
+     * Empty constructor
+     */
     public NodeHtmlConverter() {
         this(null);
     }
-    
+
+    /**
+     * This constructor takes the node that should be rendered as an argument
+     * @param node The document node to be rendered / converted
+     */
     public NodeHtmlConverter(Node node) {
         this.node = node;
     }
     
+    // </editor-fold>
+    
+    
+    // <editor-fold desc="Public interface">
+
+    /**
+     * Sets the node that should be rendered.
+     * @param node Reference to the node that should be rendered
+     */
+    public void setNode(Node node) {
+        this.node = node;
+    }
+    
+    /**
+     * Renders the node contents to html and returns the results as a string
+     * @return HTML representation of the node contents
+     */
     public String toHtml() {
         if (node == null) return "";
         
@@ -92,6 +123,8 @@ public class NodeHtmlConverter {
         sb.append("</pre></body></html>");
         return sb.toString();
     }
+    
+    // </editor-fold>
     
     
     // <editor-fold desc="Internal methods">

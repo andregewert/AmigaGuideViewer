@@ -19,7 +19,8 @@ package de.ubergeek.amigaguideviewer;
 
 /**
  * A simple tokenizer for the contents of a single node.
- * Line command should be removed before utilizing the tokenizer.
+ * This is a helping class to split the node content into its components.
+ * Line commands should be removed before utilizing the tokenizer.
  * @author André Gewert <agewert@ubergeek.de>
  */
 public class Tokenizer {
@@ -85,7 +86,9 @@ public class Tokenizer {
     /**
      * Parses the next token.
      * Return true if any token has been read successfully, otherwise false.
-     * @return 
+     * Normally this method should return false at the end of the content. It's
+     * intended use is the determination of a while (reading) loop.
+     * @return true if another token could be read or false if there are no more tokens
      */
     public boolean parseNextToken() {
         String tmpToken;
@@ -108,7 +111,7 @@ public class Tokenizer {
                 }
             }
 
-            // Begin of a command
+            // Beginning of a command
             case '@' -> {
                 var nextChar = nextChar();
                 if (nextChar == '{') {
@@ -153,26 +156,23 @@ public class Tokenizer {
         setCursorBack(1);
     }
     
-    private String readUntilCharClass(String charClass, boolean include) {
-        String tk = "";
-        boolean cont = true;
+    private String readUntilCharClass(String charClass, boolean includeInCurrentToken) {
+        String readContent = "";
+        boolean continueToRead = true;
 
-        while (cont) {
+        while (continueToRead) {
             var nextChar = nextChar();
-            if (nextChar == Character.MIN_VALUE) return tk;
+            if (nextChar == Character.MIN_VALUE) return readContent;
             
-            cont = !String.valueOf(nextChar).matches(charClass);
-            //{
-            //    cont = false;
-            //}
+            continueToRead = !String.valueOf(nextChar).matches(charClass);
             
-            if (cont || include) {
-                tk = tk.concat(String.valueOf(nextChar));
-            } else if (!include) {
+            if (continueToRead || includeInCurrentToken) {
+                readContent = readContent.concat(String.valueOf(nextChar));
+            } else if (!includeInCurrentToken) {
                 setCursorBack();
             }
         }
-        return tk;
+        return readContent;
     }
     
     // </editor-fold>

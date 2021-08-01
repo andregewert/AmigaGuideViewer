@@ -23,8 +23,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- *
- * @author agewert
+ * Represents an AmigaGuide document
+ * @author André Gewert <agewert@ubergeek.de>
  */
 public class Document {
 
@@ -41,15 +41,28 @@ public class Document {
     
     // <editor-fold desc="Accessors">
 
-    public Node getFirstNode() {
+    /**
+     * Returns the first node that should be shown when the document is loaded.
+     * Normally this is the first node in the document.
+     * @return Title node
+     */
+    public Node getTitleNode() {
         return firstNode;
     }
     
-    public void setFirstNode(Node node) {
+    /**
+     * Sets the title node for this document.
+     * @param node The node that should be used as the title
+     */
+    public void setTitleNode(Node node) {
         if (!nodes.containsValue(node)) return;
         firstNode = node;
     }
     
+    /**
+     * Returns a list with all existing document nodes
+     * @return A list with all existing document nodes
+     */
     public List<Node> getNodesList() {
         return new ArrayList<>(nodes.values());
     }
@@ -59,6 +72,9 @@ public class Document {
     
     // <editor-fold desc="Constructors">
     
+    /**
+     * The constructor does not need / accepts arguments
+     */
     public Document() {
         nodes = new LinkedHashMap<>();
         attributes = new LinkedHashMap<>();
@@ -69,7 +85,14 @@ public class Document {
     
     // <editor-fold desc="Public methods">
 
-    public Node createAddNode(String identifier, String title) {
+    /**
+     * Created a new document node and adds it's reference to the list of nodes
+     * 
+     * @param identifier The node's identification string
+     * @param title Node title
+     * @return Reference to the new document node
+     */
+    public Node createAndAddNode(String identifier, String title) {
         var node = new Node(this, identifier, title);
         nodes.put(identifier.toLowerCase(), node);
         if (nodes.size() == 1) {
@@ -78,6 +101,12 @@ public class Document {
         return node;
     }
     
+    /**
+     * Tries to find a document node with the given identification string.
+     * If no node with the given identifier is existing the method returns null.
+     * @param identifier The node's identification string
+     * @return Reference to the found document node or null
+     */
     public Node getNodeByIdentifier(String identifier) {
         if (nodes.containsKey(identifier.toLowerCase())) {
             return nodes.get(identifier.toLowerCase());
@@ -85,11 +114,21 @@ public class Document {
         return null;
     }
     
+    /**
+     * Setes a global attribute.
+     * @param name Attribute name
+     * @param value Value
+     */
     public void setAttribute(String name, String value) {
         if (name == null || name.isBlank()) return;
         attributes.put(name.toLowerCase(), value);
     }
     
+    /**
+     * Returns the global attribute value or null
+     * @param name Name of the attribute
+     * @return The attribute value or null
+     */
     public String getAttributeValue(String name) {
         if (name == null || name.isBlank()) return null;
         if (attributes.containsKey(name.toLowerCase())) {
@@ -98,11 +137,22 @@ public class Document {
         return null;
     }
     
+    /**
+     * Checks if a global attribute is defined
+     * @param name Name of the attribute
+     * @return true if the attribute is defined for this document
+     */
     public boolean isAttributeSet(String name) {
         if (name == null || name.isBlank()) return false;
         return attributes.containsKey(name.toLowerCase());
     }
     
+    /**
+     * Returns the identification string for the node that includes the table
+     * of contents.
+     * If no table of contents is defined null will be returned.
+     * @return Identifier for the toc node or null
+     */
     public String getTocNodeIdentifier() {
         if (isAttributeSet("toc")) {
             return getAttributeValue("toc");
@@ -110,6 +160,11 @@ public class Document {
         return null;
     }
     
+    /**
+     * Return the identification string for the node that includes the index.
+     * If no index is defined null will be returned.
+     * @return Identifier for the index node or null
+     */
     public String getIndexNodeIdentifier() {
         if (isAttributeSet("index")) {
             return getAttributeValue("index");
